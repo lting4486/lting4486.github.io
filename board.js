@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { t, onLangChange } from "./i18n.js";
 
 // ---------------------------------------------------------------------------
 // Guestbook corkboard: shared sticky notes backed by Supabase.
@@ -28,11 +29,28 @@ const noteRepliesEl = document.getElementById("note-replies");
 const replyForm = document.getElementById("reply-form");
 const replyNameInput = document.getElementById("reply-name-input");
 const replyInput = document.getElementById("reply-input");
+const replySubmitBtn = replyForm.querySelector('button[type="submit"]');
+const boardTitleEl = document.querySelector("#board-panel h2");
+const boardHintEl = document.querySelector(".board-hint");
 
 let myUserId = null;
 let notesCache = [];
 let currentNoteId = null;
 let composerOpen = false;
+
+function refreshBoardText() {
+  boardCloseBtn.setAttribute("aria-label", t("boardClose"));
+  boardTitleEl.textContent = t("boardTitle");
+  boardHintEl.textContent = t("boardHint");
+  noteDetailCloseBtn.textContent = t("noteBack");
+  noteDetailCloseBtn.setAttribute("aria-label", t("noteBackAria"));
+  noteDetailDelete.textContent = t("noteDelete");
+  replyNameInput.placeholder = t("replyNamePlaceholder");
+  replyInput.placeholder = t("replyInputPlaceholder");
+  replySubmitBtn.textContent = t("replySubmit");
+}
+refreshBoardText();
+onLangChange(refreshBoardText);
 
 function getSavedName() {
   return localStorage.getItem(NAME_KEY) || "";
@@ -170,14 +188,14 @@ function openComposer(x, y) {
 
   const nameInput = document.createElement("input");
   nameInput.className = "sticky-name-input";
-  nameInput.placeholder = "你的名字";
+  nameInput.placeholder = t("composerNamePlaceholder");
   nameInput.maxLength = 30;
   nameInput.value = getSavedName();
 
   const textarea = document.createElement("textarea");
   textarea.className = "sticky-textarea";
   textarea.maxLength = 200;
-  textarea.placeholder = "写点什么…";
+  textarea.placeholder = t("composerTextPlaceholder");
   textarea.style.color = fontColor;
 
   const bgRow = buildSwatchRow(NOTE_COLORS, bgColor, (c) => {
@@ -195,7 +213,7 @@ function openComposer(x, y) {
   const backBtn = document.createElement("button");
   backBtn.type = "button";
   backBtn.className = "draft-back";
-  backBtn.textContent = "← 返回";
+  backBtn.textContent = t("draftBack");
   backBtn.addEventListener("click", () => {
     draft.remove();
     composerOpen = false;
@@ -204,19 +222,19 @@ function openComposer(x, y) {
   const pinBtn = document.createElement("button");
   pinBtn.type = "button";
   pinBtn.className = "draft-pin";
-  pinBtn.textContent = "贴上";
+  pinBtn.textContent = t("draftPin");
   pinBtn.addEventListener("click", async () => {
     const name = nameInput.value.trim().slice(0, 30);
     const content = textarea.value.trim().slice(0, 200);
     if (!name || !content) {
-      alert("名字和内容都要写哦");
+      alert(t("needNameContent"));
       return;
     }
     saveName(name);
 
     const userId = await ensureAuth();
     if (!userId) {
-      alert("连接留言板失败，请稍后再试");
+      alert(t("connectFailed"));
       return;
     }
 
@@ -233,7 +251,7 @@ function openComposer(x, y) {
     const { data, error } = await supabase.from("board_notes").insert(newNote).select().single();
     if (error) {
       console.error("Failed to post note", error);
-      alert("留言失败，请稍后再试");
+      alert(t("postFailed"));
       return;
     }
     draft.remove();
@@ -253,7 +271,7 @@ async function openNoteDetail(note) {
   noteDetailAuthor.textContent = note.author_name;
   noteDetailContent.textContent = note.content;
   const { date, time } = formatStamp(note.created_at);
-  noteDetailTime.textContent = `贴于 ${date} ${time}`;
+  noteDetailTime.textContent = `${t("stampedAt")} ${date} ${time}`;
   noteDetailDelete.classList.toggle("hidden", note.author_id !== myUserId);
   replyNameInput.value = getSavedName();
   noteDetail.classList.remove("hidden");
@@ -312,7 +330,7 @@ replyForm.addEventListener("submit", async (e) => {
 
   const userId = await ensureAuth();
   if (!userId) {
-    alert("连接留言板失败，请稍后再试");
+    alert(t("connectFailed"));
     return;
   }
   saveName(name);
@@ -325,7 +343,7 @@ replyForm.addEventListener("submit", async (e) => {
   });
   if (error) {
     console.error("Failed to post reply", error);
-    alert("回复失败，请稍后再试");
+    alert(t("replyFailed"));
     return;
   }
   replyInput.value = "";
@@ -334,11 +352,11 @@ replyForm.addEventListener("submit", async (e) => {
 
 noteDetailDelete.addEventListener("click", async () => {
   if (!currentNoteId) return;
-  if (!confirm("确定删除这张便利贴吗？")) return;
+  if (!confirm(t("confirmDeleteNote"))) return;
   const { error } = await supabase.from("board_notes").delete().eq("id", currentNoteId);
   if (error) {
     console.error("Failed to delete note", error);
-    alert("删除失败，请稍后再试");
+    alert(t("deleteFailed"));
     return;
   }
   notesCache = notesCache.filter((n) => n.id !== currentNoteId);

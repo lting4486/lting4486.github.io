@@ -88,6 +88,56 @@ html, body {
   opacity: 0;
 }
 
+#welcome-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 12;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  will-change: transform;
+}
+#welcome-text.lang-zh {
+  font-family: "Ma Shan Zheng", cursive;
+  font-size: 96px;
+}
+#welcome-text.lang-en {
+  font-family: "Caveat", cursive;
+  font-size: 84px;
+}
+.welcome-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px) rotate(-6deg);
+  animation: welcome-char-in 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@keyframes welcome-char-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+#room-lang-toggle {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 15;
+  border: none;
+  border-radius: 999px;
+  background: rgba(20, 18, 16, 0.45);
+  backdrop-filter: blur(6px);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12.5px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+#room-lang-toggle:hover {
+  background: rgba(20, 18, 16, 0.65);
+}
+
 #note-layer {
   position: absolute;
   inset: 0;
@@ -156,7 +206,7 @@ html, body {
 
 #map-panel {
   position: relative;
-  width: min(88vw, 980px);
+  width: min(92vw, 1100px);
   background: #f4ede0;
   border-radius: 16px;
   padding: 28px 28px 20px;
@@ -194,75 +244,41 @@ html, body {
   background: rgba(0, 0, 0, 0.15);
 }
 
-#map-canvas {
+#leaflet-map {
   position: relative;
   width: 100%;
+  height: 62vh;
   border-radius: 10px;
   overflow: hidden;
-  cursor: crosshair;
   background: #dce7ea;
 }
 
-#map-image {
-  display: block;
-  width: 100%;
-  height: auto;
-  pointer-events: none;
-  user-select: none;
-}
-
-.map-pin {
-  position: absolute;
+.map-pin-icon {
   width: 14px;
   height: 14px;
-  margin-left: -7px;
-  margin-top: -13px;
-  transform-origin: 50% 100%;
-  cursor: pointer;
-}
-.map-pin::before {
-  content: "";
-  position: absolute;
-  inset: 0;
   background: #c0453a;
   border: 2px solid #fff3e6;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+  border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
-.map-pin:hover::before {
-  background: #a5342b;
-}
-.map-pin.home {
-  width: 18px;
-  height: 18px;
-  margin-left: -9px;
-  margin-top: -17px;
-  cursor: default;
-}
-.map-pin.home::before {
+.map-pin-icon.map-pin-home {
   background: #d9a441;
   border-color: #fff8e8;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(217, 164, 65, 0.25);
+  cursor: default;
 }
-.map-pin .map-pin-label {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 4px;
-  padding: 2px 7px;
+.map-pin-tooltip {
   background: rgba(30, 24, 20, 0.85);
   color: #fff;
   font-size: 11px;
+  border: none;
   border-radius: 5px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
+  padding: 2px 7px;
+  box-shadow: none;
 }
-.map-pin:hover .map-pin-label {
-  opacity: 1;
+.map-pin-tooltip::before {
+  border-top-color: rgba(30, 24, 20, 0.85);
 }
 
 #music-modal {

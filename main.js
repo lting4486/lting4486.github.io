@@ -4,6 +4,8 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 import { openBoard } from "./board.js";
 import { openLaptop } from "./laptop.js";
+import { openMapModal } from "./map.js";
+import { t, getLang, toggleLang, onLangChange } from "./i18n.js";
 
 // ---------------------------------------------------------------------------
 // Basic scene / renderer / camera
@@ -420,12 +422,13 @@ loader.load(
     openLaptop(() => {
       returnToOverview();
       document.getElementById("hint").classList.remove("hidden");
+      document.getElementById("welcome-text").classList.add("show");
     });
   },
   undefined,
   (err) => {
     console.error("Failed to load study_room.glb", err);
-    document.querySelector(".loading-text").textContent = "加载失败,检查 assets/study_room.glb 是否存在";
+    document.querySelector(".loading-text").textContent = t("loadError");
   }
 );
 
@@ -688,136 +691,25 @@ function returnToOverview() {
   flyCameraTo(DEFAULT_VIEW);
 }
 
-// ---------------------------------------------------------------------------
-// World map modal — click the globe to open it. Pins are stored as
-// {x, y} percentages of the map image so they stay put at any zoom level,
-// persisted in localStorage so they're still there next visit.
-// ---------------------------------------------------------------------------
-const MAP_PINS_KEY = "studyroom.visitedPlaces";
-const mapModal = document.getElementById("map-modal");
-const mapCanvas = document.getElementById("map-canvas");
-const mapImage = document.getElementById("map-image");
-const mapCloseBtn = document.getElementById("map-close");
-
-// Baked into the site so every visitor sees the same map, not just this
-// browser. {x, y} are percentages of the map image (equirectangular:
-// x = (lon+180)/360*100, y = (90-lat)/180*100). Home gets its own style.
-const HOME_PLACE = { name: "长沙 · 家乡", x: 81.37, y: 34.32 };
-const DEFAULT_PLACES = [
-  // 北美
-  { name: "麦迪逊", x: 25.17, y: 26.07 },
-  { name: "旧金山", x: 15.99, y: 29.02 },
-  { name: "纽约", x: 29.44, y: 27.38 },
-  { name: "波士顿", x: 30.26, y: 26.47 },
-  { name: "华盛顿", x: 28.60, y: 28.38 },
-  { name: "奥兰多", x: 27.39, y: 34.14 },
-  { name: "多伦多", x: 27.95, y: 25.75 },
-  { name: "魁北克旧城", x: 30.22, y: 23.99 },
-  { name: "蒙特利尔", x: 29.56, y: 24.72 },
-  { name: "墨西哥", x: 22.46, y: 39.21 },
-  // 中国
-  { name: "济南", x: 82.50, y: 29.64 },
-  { name: "烟台", x: 83.74, y: 29.19 },
-  { name: "青岛", x: 83.44, y: 29.96 },
-  { name: "聊城", x: 82.22, y: 29.74 },
-  { name: "开封", x: 81.75, y: 30.67 },
-  { name: "西安", x: 80.26, y: 30.96 },
-  { name: "乌鲁木齐", x: 74.34, y: 25.65 },
-  { name: "湘潭", x: 81.37, y: 34.54 },
-  { name: "常德", x: 81.03, y: 33.88 },
-  { name: "益阳", x: 81.21, y: 34.12 },
-  { name: "武汉", x: 81.75, y: 33.01 },
-  { name: "上海", x: 83.74, y: 32.65 },
-  { name: "北京", x: 82.34, y: 27.83 },
-  { name: "天津", x: 82.56, y: 28.28 },
-  { name: "秦皇岛", x: 83.22, y: 27.81 },
-  { name: "北海", x: 80.31, y: 38.07 },
-  { name: "广州", x: 81.46, y: 37.15 },
-  { name: "深圳", x: 81.68, y: 37.48 },
-  { name: "东莞", x: 81.60, y: 37.21 },
-  { name: "腾冲", x: 77.36, y: 36.09 },
-  { name: "芒市", x: 77.39, y: 36.43 },
-  // 欧洲
-  { name: "米兰", x: 52.55, y: 24.74 },
-  { name: "贝加莫", x: 52.69, y: 24.61 },
-  { name: "克雷马", x: 52.69, y: 24.80 },
-  { name: "佛罗伦萨", x: 53.13, y: 25.68 },
-  { name: "罗马", x: 53.47, y: 26.72 },
-  { name: "因斯布鲁克", x: 53.17, y: 23.74 },
-  { name: "汉堡", x: 52.78, y: 20.25 },
-  { name: "阿姆斯特丹", x: 51.36, y: 20.91 },
-].map((p) => ({ ...p, isDefault: true }));
-
-function loadCustomPins() {
-  try {
-    return JSON.parse(localStorage.getItem(MAP_PINS_KEY)) || [];
-  } catch {
-    return [];
-  }
+const roomLangToggleBtn = document.getElementById("room-lang-toggle");
+const hintEl = document.getElementById("hint");
+const closeMusicBtn = document.getElementById("closeMusic");
+const welcomeTextEl = document.getElementById("welcome-text");
+function refreshRoomText() {
+  document.title = t("siteTitle");
+  roomLangToggleBtn.textContent = t("langToggle");
+  hintEl.textContent = t("hint");
+  closeMusicBtn.setAttribute("aria-label", t("musicClose"));
+  welcomeTextEl.textContent = t("welcomeText");
+  welcomeTextEl.classList.toggle("lang-zh", getLang() === "zh");
+  welcomeTextEl.classList.toggle("lang-en", getLang() === "en");
 }
-function saveCustomPins(pins) {
-  localStorage.setItem(MAP_PINS_KEY, JSON.stringify(pins));
-}
+refreshRoomText();
+onLangChange(refreshRoomText);
+roomLangToggleBtn.addEventListener("click", () => toggleLang());
 
-let customPlaces = loadCustomPins();
-
-function renderPins() {
-  mapCanvas.querySelectorAll(".map-pin").forEach((el) => el.remove());
-
-  const addPin = (place, onRemove) => {
-    const pin = document.createElement("div");
-    pin.className = "map-pin" + (place.name === HOME_PLACE.name ? " home" : "");
-    pin.style.left = `${place.x}%`;
-    pin.style.top = `${place.y}%`;
-    const label = document.createElement("span");
-    label.className = "map-pin-label";
-    label.textContent = place.name || "标记";
-    pin.appendChild(label);
-    if (onRemove) {
-      pin.addEventListener("click", (e) => {
-        e.stopPropagation();
-        onRemove();
-      });
-    }
-    mapCanvas.appendChild(pin);
-  };
-
-  addPin(HOME_PLACE, null);
-  DEFAULT_PLACES.forEach((place) => addPin(place, null));
-  customPlaces.forEach((place, index) => {
-    addPin(place, () => {
-      customPlaces.splice(index, 1);
-      saveCustomPins(customPlaces);
-      renderPins();
-    });
-  });
-}
-
-mapCanvas.addEventListener("click", (e) => {
-  const rect = mapImage.getBoundingClientRect();
-  const x = ((e.clientX - rect.left) / rect.width) * 100;
-  const y = ((e.clientY - rect.top) / rect.height) * 100;
-  if (x < 0 || x > 100 || y < 0 || y > 100) return;
-  const name = prompt("这个地方叫什么名字?(可留空)") || "";
-  customPlaces.push({ x, y, name });
-  saveCustomPins(customPlaces);
-  renderPins();
-});
-
-function openMapModal() {
-  renderPins();
-  mapModal.classList.remove("hidden");
-}
-function closeMapModal() {
-  mapModal.classList.add("hidden");
-}
-mapCloseBtn.addEventListener("click", closeMapModal);
-mapModal.addEventListener("click", (e) => {
-  if (e.target === mapModal) closeMapModal(); // click on the dim backdrop
-});
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    closeMapModal();
     closeMusicPanel();
   }
 });
@@ -839,6 +731,33 @@ function animateGlobe(delta, elapsed) {
   floatingGlobe.position.y = GLOBE_BASE_POS[1] + Math.sin(elapsed * 0.6) * 0.04;
 }
 
+// Floating "welcome" text — anchored to a fixed spot in the room (not the
+// screen), so it keeps its place and perspective size as the camera moves,
+// with a gentle continuous bob layered on top of the anchor's world Y.
+const WELCOME_ANCHOR = new THREE.Vector3(...fromBlender(1.4, 1.0, 1.7));
+const WELCOME_REF_DISTANCE = 4; // camera distance at which the text renders at scale 1
+
+function updateWelcomeText() {
+  const pos = WELCOME_ANCHOR.clone();
+  pos.y += Math.sin(clock.getElapsedTime() * 0.7) * 0.06;
+
+  const screenPos = pos.clone().project(camera);
+  if (screenPos.z > 1) {
+    welcomeTextEl.style.visibility = "hidden";
+    return;
+  }
+  welcomeTextEl.style.visibility = "visible";
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
+  const y = (-screenPos.y * 0.5 + 0.5) * rect.height + rect.top;
+  const scale = WELCOME_REF_DISTANCE / camera.position.distanceTo(pos);
+
+  welcomeTextEl.style.left = `${x}px`;
+  welcomeTextEl.style.top = `${y}px`;
+  welcomeTextEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
@@ -846,6 +765,7 @@ function animate() {
   animateGlobe(delta, clock.getElapsedTime());
   controls.update();
   renderer.render(scene, camera);
+  updateWelcomeText();
 }
 animate();
 

@@ -1,5 +1,12 @@
+import { t, onLangChange } from "./i18n.js";
+
 const overlay = document.getElementById("laptop-overlay");
 const exitBtn = document.getElementById("laptop-exit");
+
+exitBtn.textContent = t("laptopExit");
+onLangChange(() => {
+  exitBtn.textContent = t("laptopExit");
+});
 
 let onExit = null;
 

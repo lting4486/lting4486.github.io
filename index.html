@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>书房</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Ma+Shan+Zheng&display=swap"
+    rel="stylesheet"
+  />
 </head>
 <body>
   <div id="app">
@@ -17,25 +24,26 @@
 
     <div id="hint" class="hidden">try to click</div>
 
+    <div id="welcome-text" class="lang-en"></div>
+
     <div id="note-layer"></div>
 
     <div id="tooltip" class="hidden"></div>
-    
+
+    <button id="room-lang-toggle">中文</button>
 
     <div id="map-modal" class="hidden">
       <div id="map-panel">
-        <button id="map-close" aria-label="关闭">×</button>
-        <h2>去过的地方</h2>
-        <p class="map-hint">点地图空白处添加标记 · 点已有标记删除它</p>
-        <div id="map-canvas">
-          <img id="map-image" src="assets/world-map.svg" alt="世界地图" draggable="false" />
-        </div>
+        <button id="map-close" aria-label="Close">×</button>
+        <h2>Places I've been</h2>
+        <p class="map-hint">Click empty space to add a pin · click an existing pin to remove it</p>
+        <div id="leaflet-map"></div>
       </div>
     </div>
 
     <div id="music-modal" class="hidden">
       <div id="musicPanel">
-        <button id="closeMusic" aria-label="关闭">×</button>
+        <button id="closeMusic" aria-label="Close">×</button>
         <ul id="playlist"></ul>
         <audio id="audioPlayer" controls></audio>
       </div>
@@ -43,30 +51,30 @@
 
     <div id="board-modal" class="hidden">
       <div id="board-panel">
-        <button id="board-close" aria-label="关闭">×</button>
-        <h2>留言板</h2>
-        <p class="board-hint">点软木板空白处贴一张便利贴 · 点已有的便利贴查看/回复 · 只能删除自己贴的</p>
+        <button id="board-close" aria-label="Close">×</button>
+        <h2>Guestbook</h2>
+        <p class="board-hint">Click empty cork to pin a note · click a note to view or reply · you can only delete your own</p>
         <div id="board-canvas"></div>
 
         <div id="note-detail" class="hidden">
-          <button id="note-detail-close" aria-label="返回软木板">← 返回</button>
+          <button id="note-detail-close" aria-label="Back to corkboard">← Back</button>
           <div id="note-detail-author"></div>
           <div id="note-detail-content"></div>
           <div id="note-detail-time"></div>
-          <button id="note-detail-delete" class="hidden">删除这张便利贴</button>
+          <button id="note-detail-delete" class="hidden">Delete this note</button>
           <div id="note-replies"></div>
           <form id="reply-form">
-            <input id="reply-name-input" type="text" placeholder="你的名字" maxlength="30" autocomplete="off" />
-            <input id="reply-input" type="text" placeholder="回复一句…" maxlength="200" autocomplete="off" />
-            <button type="submit">发送</button>
+            <input id="reply-name-input" type="text" placeholder="Your name" maxlength="30" autocomplete="off" />
+            <input id="reply-input" type="text" placeholder="Write a reply…" maxlength="200" autocomplete="off" />
+            <button type="submit">Send</button>
           </form>
         </div>
       </div>
     </div>
 
     <div id="laptop-overlay" class="hidden">
-      <button id="laptop-exit">← 退出</button>
-      <iframe id="laptop-iframe" src="academic.html" title="个人主页"></iframe>
+      <button id="laptop-exit">← Exit</button>
+      <iframe id="laptop-iframe" src="academic.html" title="Personal homepage"></iframe>
     </div>
 
   <script type="importmap">
@@ -74,7 +82,8 @@
       "imports": {
         "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+        "leaflet": "https://esm.sh/leaflet@1.9.4"
       }
     }
   </script>

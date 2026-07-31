@@ -27,8 +27,8 @@
     flex: 0 0 240px;
   }
   #photo-frame {
-    width: 240px;
-    height: 300px;
+    width: 250px;
+    height: 250px;
     border-radius: 6px;
     overflow: hidden;
     background: #ddd6c8;
@@ -191,7 +191,8 @@
           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
         />
         <div id="photo-placeholder">
-          <span data-i18n="zh">把你的照片放到<br />assets/profile.jpg</span>
+          <span data-i18n="zh">把你的照片放到<br />assets/
+            .jpg</span>
           <span data-i18n="en">Add your photo at<br />assets/profile.jpg</span>
         </div>
       </div>
@@ -285,7 +286,7 @@ further study.
 
   <script>
     (function () {
-      var KEY = "academic_lang";
+      var KEY = "site_lang"; // shared with the room UI (index.html / i18n.js)
       var toggleBtn = document.getElementById("lang-toggle");
 
       function apply(lang) {
