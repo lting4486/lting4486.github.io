@@ -419,11 +419,7 @@ loader.load(
     controls.update();
     controls.enabled = false;
     focusedId = "laptop";
-    openLaptop(() => {
-      returnToOverview();
-      document.getElementById("hint").classList.remove("hidden");
-      document.getElementById("welcome-text").classList.add("show");
-    });
+    openLaptop(handleLaptopExit, { animate: false });
   },
   undefined,
   (err) => {
@@ -678,7 +674,7 @@ function handleInteraction(id) {
     const onDone = id === "laptop"
       ? () => {
           controls.enabled = false;
-          openLaptop(() => returnToOverview());
+          openLaptop(handleLaptopExit);
         }
       : undefined;
     flyCameraTo(view, 900, onDone);
@@ -691,18 +687,52 @@ function returnToOverview() {
   flyCameraTo(DEFAULT_VIEW);
 }
 
+// Shared by both the auto-opened landing view and manual laptop clicks —
+// whichever one the visitor exits from first fires the "first exit" music cue.
+let hasAutoPlayedMusic = false;
+function handleLaptopExit() {
+  returnToOverview();
+  document.getElementById("hint").classList.remove("hidden");
+  showWelcomeText();
+  if (!hasAutoPlayedMusic) {
+    hasAutoPlayedMusic = true;
+    playSongByName("等我到你的年纪");
+  }
+}
+
 const roomLangToggleBtn = document.getElementById("room-lang-toggle");
 const hintEl = document.getElementById("hint");
 const closeMusicBtn = document.getElementById("closeMusic");
 const welcomeTextEl = document.getElementById("welcome-text");
+
+// Renders each character as its own span with a staggered entrance
+// animation, so the text reveals roughly like it's being written rather
+// than fading in as one block.
+let welcomeShown = false;
+function renderWelcomeChars() {
+  const text = t("welcomeText");
+  welcomeTextEl.innerHTML = "";
+  [...text].forEach((ch, i) => {
+    const span = document.createElement("span");
+    span.className = "welcome-char";
+    span.textContent = ch === " " ? " " : ch;
+    span.style.animationDelay = `${i * 0.15}s`;
+    welcomeTextEl.appendChild(span);
+  });
+}
+function showWelcomeText() {
+  welcomeShown = true;
+  renderWelcomeChars();
+}
+
 function refreshRoomText() {
   document.title = t("siteTitle");
   roomLangToggleBtn.textContent = t("langToggle");
   hintEl.textContent = t("hint");
   closeMusicBtn.setAttribute("aria-label", t("musicClose"));
-  welcomeTextEl.textContent = t("welcomeText");
   welcomeTextEl.classList.toggle("lang-zh", getLang() === "zh");
   welcomeTextEl.classList.toggle("lang-en", getLang() === "en");
+  if (welcomeShown) renderWelcomeChars();
 }
 refreshRoomText();
 onLangChange(refreshRoomText);
@@ -798,6 +828,13 @@ const songs = [
     }
 ];
 
+
+function playSongByName(name) {
+    const song = songs.find((s) => s.name === name);
+    if (!song) return;
+    player.src = song.url;
+    player.play();
+}
 
 // Create playlist UI
 function showPlaylist(){
