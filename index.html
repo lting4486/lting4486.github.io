@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>书房</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene"></canvas>
+    <div id="warm-grade"></div>
+
+    <div id="loading">
+      <div class="loading-text">loading…</div>
+    </div>
+
+    <div id="hint" class="hidden">try to click</div>
+
+    <div id="tooltip" class="hidden"></div>
+    
+
+    <div id="map-modal" class="hidden">
+      <div id="map-panel">
+        <button id="map-close" aria-label="关闭">×</button>
+        <h2>去过的地方</h2>
+        <p class="map-hint">点地图空白处添加标记 · 点已有标记删除它</p>
+        <div id="map-canvas">
+          <img id="map-image" src="assets/world-map.svg" alt="世界地图" draggable="false" />
+        </div>
+      </div>
+    </div>
+
+    <div id="musicPanel">
+    <ul id="playlist"></ul>
+    <audio id="audioPlayer" controls></audio>
+    <button id="closeMusic">
+    Close
+    </button>
+    </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
