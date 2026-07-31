@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Your Name</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f7f4ee;
+    color: #2a241d;
+    font-family: Georgia, "Times New Roman", "PingFang SC", serif;
+  }
+  #page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 64px 48px;
+  }
+  #top-row {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+  }
+  #photo-col {
+    flex: 0 0 240px;
+  }
+  #photo-frame {
+    width: 240px;
+    height: 300px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ddd6c8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+  #photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #photo-placeholder {
+    display: none;
+    text-align: center;
+    color: #8a7d6c;
+    font-size: 13px;
+    padding: 0 16px;
+  }
+  #bio-col {
+    flex: 1;
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 32px;
+    font-weight: 600;
+  }
+  .title-line {
+    margin: 0 0 24px;
+    font-size: 15px;
+    color: #6b5f4f;
+  }
+  .bio-text {
+    font-size: 15.5px;
+    line-height: 1.75;
+    margin: 0 0 28px;
+  }
+  .bio-text .placeholder {
+    background: rgba(217, 164, 65, 0.18);
+  }
+  #links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #links a {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: #2a241d;
+    color: #f7f4ee;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  #links a.secondary {
+    background: transparent;
+    color: #2a241d;
+    border: 1px solid rgba(42, 36, 29, 0.35);
+  }
+
+  #research-section {
+    margin-top: 48px;
+  }
+  #research-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 18px;
+  }
+  .research-item {
+    border-top: 1px solid rgba(42, 36, 29, 0.15);
+  }
+  .research-item:last-child {
+    border-bottom: 1px solid rgba(42, 36, 29, 0.15);
+  }
+  .research-toggle {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 16px 0;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+  }
+  .research-title {
+    font-size: 16px;
+    font-weight: 600;
+    flex: 1;
+  }
+  .research-chevron {
+    font-size: 13px;
+    color: #8a7d6c;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .research-item.open .research-chevron {
+    transform: rotate(90deg);
+  }
+  .research-abstract {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .research-item.open .research-abstract {
+    max-height: 600px;
+  }
+  .research-abstract p {
+    margin: 0 0 18px;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 640px) {
+    #page { padding: 32px 24px; }
+    #top-row { flex-direction: column; }
+    #photo-col { flex: none; }
+    #photo-frame { width: 100%; height: 220px; }
+  }
+
+  #lang-toggle {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    border: none;
+    border-radius: 999px;
+    background: #2a241d;
+    color: #f7f4ee;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+    font-size: 12.5px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+  #lang-toggle:hover {
+    background: #45392a;
+  }
+
+  /* Show only the span matching the current body[data-lang]; hidden ones
+     stay in the DOM (still readable/editable) but display:none. */
+  [data-i18n] { display: none; }
+  body[data-lang="zh"] [data-i18n="zh"] { display: inline; }
+  body[data-lang="en"] [data-i18n="en"] { display: inline; }
+</style>
+</head>
+<body data-lang="en">
+  <button id="lang-toggle">中文</button>
+
+  <div id="page">
+   <div id="top-row">
+    <div id="photo-col">
+      <div id="photo-frame">
+        <img
+          src="assets/profile.jpg"
+          alt="Your Name"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div id="photo-placeholder">
+          <span data-i18n="zh">把你的照片放到<br />assets/profile.jpg</span>
+          <span data-i18n="en">Add your photo at<br />assets/profile.jpg</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="bio-col">
+      <h1>
+        <span data-i18n="zh">Tīng Liú/刘汀</span>
+        <span data-i18n="en">Tīng Liú/刘汀</span>
+      </h1>
+      <p class="title-line">
+        <span class="placeholder" data-i18n="zh">AAE</span>
+        <span class="placeholder" data-i18n="en">AAE</span>
+        · University of Wisconsin–Madison
+      </p>
+
+      <p class="bio-text">
+        <span class="placeholder" data-i18n="zh">
+          你好！我是刘汀，目前是威斯康星麦迪逊大学的博士生，研究方向是农业/发展经济学。
+          我对中国的城乡不平衡尤其感兴趣，包括不限于农业发展,教育，交通等领域，欢迎联系交流合作。
+        </span>
+        <span class="placeholder" data-i18n="en">
+          Hi! I'm Ting, currently a PhD student at UW-Madison,
+          working on Agricultural/Development Economics.
+          I'm interested in the urban-rural inequality in China, including but not limited to areas such as agricultural development, education, and transportation — feel free to reach out!
+        </span>
+      </p>
+
+      <div id="links">
+        <a href="assets/cv.pdf" target="_blank" rel="noopener noreferrer">CV</a>
+        <a class="secondary" href="mailto:tliu443@wisc.edu">Email</a>
+        <a class="secondary" href="https://github.com/lting4486" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a class="secondary" href="https://www.linkedin.com/in/ting-liu-478390271/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
+   </div>
+
+    <div id="research-section">
+      <h2>
+        <span data-i18n="zh">研究</span>
+        <span data-i18n="en">Research</span>
+      </h2>
+
+      <div class="research-item">
+        <button class="research-toggle" type="button">
+          <span class="research-title placeholder" data-i18n="zh">(2026)高速公路扩建与农业产出：
+来自中国的证据 (工作稿)</span>
+          <span class="research-title placeholder" data-i18n="en">(2026)Motorway Expansion and Agricultural Outcomes:
+Evidence from China (working paper)</span>
+          <span class="research-chevron">▸</span>
+        </button>
+        <div class="research-abstract">
+          <p class="placeholder" data-i18n="zh">
+           本文研究了2000年至2020年间中国高速公路扩张对农业产出的影响。尽管现有文献多关注交通基础设施投资的总体经济效应，但针对农业部门的研究相对有限，且其影响方向尚不明确。一方面，运输成本的降低提高了农产品产地价格，可能刺激农业生产；另一方面，通达城市变得更加便利，可能吸引农村劳动力转向非农就业，从而导致粮食产量下降。本文结合基于卫星遥感数据的增强植被指数（EVI）与县级年鉴中的官方粮食产量统计数据，利用交错双重差分法（staggered difference-in-differences）评估了高速公路通达对县级农业产出的因果效应。主要结果显示出一种分化现象：高速公路通达显著提高了耕地的EVI，但粮食产量却在通达后的年份里出现下降。这种模式符合作物替代的逻辑，而导致这一分化现象的具体机制尚需进一步研究。
+          </p>
+          <p class="placeholder" data-i18n="en">
+            This paper studies the effects of China’s motorway expansion between 2000 and 2020
+on agricultural output. While much of the existing literature focuses on aggregate
+economic effects of transportation investment, evidence on the agricultural sector is
+limited. The direction of the effect is not clear. On one hand, lower transport costs
+raise farm-gate prices and may encourage agricultural production. On the other hand,
+cheaper access to cities may draw rural workers into non-farm jobs and reduce grain
+output. We combine satellite-based Enhanced Vegetation Index (EVI) data with of-
+ficial grain output statistics from county yearbooks, and use staggered difference-in-
+differences methods to estimate the causal effect of motorway access on county-level
+agricultural outcomes. The main results show a divergence: motorway access raises
+cropland EVI significantly, while grain output falls in the years after access. This
+pattern fits with a crop substitution story. The channels driving this divergence need
+further study.
+          </p>
+        </div>
+      </div>
+
+      <div class="research-item">
+        <button class="research-toggle" type="button">
+          <span class="research-title placeholder" data-i18n="zh">[论文 / 项目标题 2]</span>
+          <span class="research-title placeholder" data-i18n="en">[Paper / Project Title 2]</span>
+          <span class="research-chevron">▸</span>
+        </button>
+        <div class="research-abstract">
+          <p class="placeholder" data-i18n="zh">
+            [在这里写这篇论文/项目的摘要 (Abstract)。]
+          </p>
+          <p class="placeholder" data-i18n="en">
+            [Write the abstract here.]
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var KEY = "academic_lang";
+      var toggleBtn = document.getElementById("lang-toggle");
+
+      function apply(lang) {
+        document.body.setAttribute("data-lang", lang);
+        document.documentElement.lang = lang;
+        toggleBtn.textContent = lang === "zh" ? "EN" : "中文";
+      }
+
+      apply(localStorage.getItem(KEY) === "zh" ? "zh" : "en");
+
+      toggleBtn.addEventListener("click", function () {
+        var next = document.body.getAttribute("data-lang") === "zh" ? "en" : "zh";
+        localStorage.setItem(KEY, next);
+        apply(next);
+      });
+
+      document.querySelectorAll(".research-toggle").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          btn.closest(".research-item").classList.toggle("open");
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

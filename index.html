@@ -17,6 +17,8 @@
 
     <div id="hint" class="hidden">try to click</div>
 
+    <div id="note-layer"></div>
+
     <div id="tooltip" class="hidden"></div>
     
 
@@ -31,19 +33,48 @@
       </div>
     </div>
 
-    <div id="musicPanel">
-    <ul id="playlist"></ul>
-    <audio id="audioPlayer" controls></audio>
-    <button id="closeMusic">
-    Close
-    </button>
+    <div id="music-modal" class="hidden">
+      <div id="musicPanel">
+        <button id="closeMusic" aria-label="关闭">×</button>
+        <ul id="playlist"></ul>
+        <audio id="audioPlayer" controls></audio>
+      </div>
+    </div>
+
+    <div id="board-modal" class="hidden">
+      <div id="board-panel">
+        <button id="board-close" aria-label="关闭">×</button>
+        <h2>留言板</h2>
+        <p class="board-hint">点软木板空白处贴一张便利贴 · 点已有的便利贴查看/回复 · 只能删除自己贴的</p>
+        <div id="board-canvas"></div>
+
+        <div id="note-detail" class="hidden">
+          <button id="note-detail-close" aria-label="返回软木板">← 返回</button>
+          <div id="note-detail-author"></div>
+          <div id="note-detail-content"></div>
+          <div id="note-detail-time"></div>
+          <button id="note-detail-delete" class="hidden">删除这张便利贴</button>
+          <div id="note-replies"></div>
+          <form id="reply-form">
+            <input id="reply-name-input" type="text" placeholder="你的名字" maxlength="30" autocomplete="off" />
+            <input id="reply-input" type="text" placeholder="回复一句…" maxlength="200" autocomplete="off" />
+            <button type="submit">发送</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="laptop-overlay" class="hidden">
+      <button id="laptop-exit">← 退出</button>
+      <iframe id="laptop-iframe" src="academic.html" title="个人主页"></iframe>
     </div>
 
   <script type="importmap">
     {
       "imports": {
         "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+        "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
       }
     }
   </script>

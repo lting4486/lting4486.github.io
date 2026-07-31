@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
+import { openBoard } from "./board.js";
+import { openLaptop } from "./laptop.js";
 
 // ---------------------------------------------------------------------------
 // Basic scene / renderer / camera
@@ -77,6 +79,20 @@ const sunLight = new THREE.DirectionalLight(0xffffff, 1);
 sunLight.position.set(...fromBlender(1.86, 5.0, 2.6));
 sunLight.target.position.set(...fromBlender(1.86, 0, 1.0));
 sunLight.castShadow = true;
+// Default shadow-camera near/far (0.5/500) are sized for a huge outdoor
+// scene; against this room's few-meter scale that leaves almost no depth
+// precision in the shadow map, which shows up as moiré/banding on every
+// shadowed surface. Tighten near/far and the frustum to the room's actual
+// size instead.
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 12;
+sunLight.shadow.camera.left = -4;
+sunLight.shadow.camera.right = 4;
+sunLight.shadow.camera.top = 4;
+sunLight.shadow.camera.bottom = -4;
+sunLight.shadow.bias = -0.0008;
+sunLight.shadow.normalBias = 0.02;
 scene.add(sunLight, sunLight.target);
 
 const windowLight = new THREE.RectAreaLight(0xffffff, 0, 1.0, 0.75);
@@ -87,6 +103,12 @@ scene.add(windowLight);
 const lampLight = new THREE.PointLight(0xffc060, 0, 3, 2);
 lampLight.position.set(...fromBlender(1.43, 1.99, 0.9));
 lampLight.castShadow = true;
+// Same depth-precision fix as sunLight, scaled to this light's own 3-unit range.
+lampLight.shadow.mapSize.set(1024, 1024);
+lampLight.shadow.camera.near = 0.05;
+lampLight.shadow.camera.far = 3;
+lampLight.shadow.bias = -0.0015;
+lampLight.shadow.normalBias = 0.02;
 scene.add(lampLight);
 
 const fillLight = new THREE.RectAreaLight(0xffffff, 1.0, 2.0, 1.4);
@@ -387,7 +409,18 @@ loader.load(
     });
 
     document.getElementById("loading").classList.add("hidden");
-    document.getElementById("hint").classList.remove("hidden");
+
+    // Land on the personal homepage by default — the room is already
+    // loaded right behind it, so "exit" can reveal it immediately.
+    camera.position.set(...FOCUS_VIEWS.laptop.position);
+    controls.target.set(...FOCUS_VIEWS.laptop.target);
+    controls.update();
+    controls.enabled = false;
+    focusedId = "laptop";
+    openLaptop(() => {
+      returnToOverview();
+      document.getElementById("hint").classList.remove("hidden");
+    });
   },
   undefined,
   (err) => {
@@ -480,6 +513,8 @@ window.addEventListener("pointerdown", (e) => {
 });
 
 window.addEventListener("pointerup", (e) => {
+  if (e.target !== canvas) return; // click landed on a UI overlay, not the 3D scene
+
   const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
   if (dist > 6) {
     // was a drag/orbit, not a click — let go and spring back to center
@@ -563,7 +598,7 @@ function easeInOutQuad(t) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
-function flyCameraTo({ position, target }, duration = 900) {
+function flyCameraTo({ position, target }, duration = 900, onDone) {
   controls.enabled = false;
   // Lift the angle constraints for the duration of the flight — otherwise
   // OrbitControls.update() clamps every in-between frame to the *next*
@@ -595,6 +630,7 @@ function flyCameraTo({ position, target }, duration = 900) {
       // Now that we've arrived, re-center the ±35°/±20° drag window here.
       constrainOrbitAround(position, target);
       controls.update();
+      if (onDone) onDone();
     }
   }
   cameraTweenHandle = requestAnimationFrame(step);
@@ -619,6 +655,14 @@ function handleInteraction(id) {
 
   openMusic();
 
+  } else if (id === "board") {
+
+  openBoard();
+
+  } else if (id === "laptop") {
+
+  // handled once the camera arrives, via the onDone callback below
+
   } else {
   // Placeholder
   console.log(`[interaction] clicked "${id}" — content page TODO`);
@@ -627,7 +671,15 @@ function handleInteraction(id) {
   if (focusedId === id) return; // already zoomed in on this one
   focusedId = id;
   const view = FOCUS_VIEWS[id];
-  if (view) flyCameraTo(view);
+  if (view) {
+    const onDone = id === "laptop"
+      ? () => {
+          controls.enabled = false;
+          openLaptop(() => returnToOverview());
+        }
+      : undefined;
+    flyCameraTo(view, 900, onDone);
+  }
 }
 
 function returnToOverview() {
@@ -764,7 +816,10 @@ mapModal.addEventListener("click", (e) => {
   if (e.target === mapModal) closeMapModal(); // click on the dim backdrop
 });
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeMapModal();
+  if (e.key === "Escape") {
+    closeMapModal();
+    closeMusicPanel();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -801,7 +856,7 @@ animate();
 
 
 // HTML elements
-const musicPanel = document.getElementById("musicPanel");
+const musicModal = document.getElementById("music-modal");
 const playlist = document.getElementById("playlist");
 const player = document.getElementById("audioPlayer");
 const closeMusic = document.getElementById("closeMusic");
@@ -842,7 +897,7 @@ function showPlaylist(){
 
 // Open music window
 function openMusic(){
-    musicPanel.classList.add("show");
+    musicModal.classList.remove("hidden");
     showPlaylist();
 }
 
@@ -850,7 +905,7 @@ function openMusic(){
 
 // Close music window
 function closeMusicPanel(){
-    musicPanel.classList.add("show");
+    musicModal.classList.add("hidden");
 }
 
 
@@ -858,3 +913,47 @@ function closeMusicPanel(){
 if(closeMusic){
     closeMusic.onclick = closeMusicPanel;
 }
+
+// Click on the dim backdrop (outside the panel) closes it
+musicModal.addEventListener("click", (e) => {
+    if (e.target === musicModal) closeMusicPanel();
+});
+
+// ---- Floating music notes next to the record player, while it plays ----
+const noteLayer = document.getElementById("note-layer");
+const recordPlayerAnchor = new THREE.Vector3(...FOCUS_VIEWS.recordPlayer.target);
+const NOTE_GLYPHS = ["♪", "♫", "♬"];
+let noteSpawnHandle = null;
+
+function spawnNote() {
+    const screenPos = recordPlayerAnchor.clone().project(camera);
+    if (screenPos.z > 1) return; // anchor is behind the camera
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
+    const y = (-screenPos.y * 0.5 + 0.5) * rect.height + rect.top;
+
+    const note = document.createElement("span");
+    note.className = "music-note";
+    note.textContent = NOTE_GLYPHS[Math.floor(Math.random() * NOTE_GLYPHS.length)];
+    note.style.left = `${x + (Math.random() * 30 - 15)}px`;
+    note.style.top = `${y}px`;
+    note.style.setProperty("--rot", `${Math.random() * 24 - 12}deg`);
+    note.addEventListener("animationend", () => note.remove());
+    noteLayer.appendChild(note);
+}
+
+function startNotes() {
+    if (noteSpawnHandle) return;
+    spawnNote();
+    noteSpawnHandle = setInterval(spawnNote, 450);
+}
+
+function stopNotes() {
+    clearInterval(noteSpawnHandle);
+    noteSpawnHandle = null;
+}
+
+player.addEventListener("play", startNotes);
+player.addEventListener("pause", stopNotes);
+player.addEventListener("ended", stopNotes);
