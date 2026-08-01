@@ -88,20 +88,33 @@ html, body {
   opacity: 0;
 }
 
-/* Handwritten "welcome"/"欢迎" + quote videos: black background + white ink,
-   composited with the room via screen blend (black -> invisible, white ->
-   shows), so no real alpha channel is needed. Positioned every frame from a
+/* Handwritten "welcome"/"欢迎" + quote clips: black background + white ink.
+   The actual <video> stays invisible off in a corner and just supplies
+   frames — main.js redraws it onto this <canvas> every frame, and the
+   screen blend (black -> invisible, white -> shows) is applied to the
+   canvas instead of the video. mix-blend-mode on a <video> is unreliable
+   across browsers (Safari/WebKit in particular doesn't composite it), but
+   canvases blend consistently everywhere. Positioned every frame from a
    fixed 3D anchor (see updateWelcomeText in main.js). pointer-events stays
    off — the black background sits over clickable furniture, so clicks pass
    straight through to the 3D scene by default. main.js does a real pixel
    check on click instead, so only the visible ink itself is clickable. */
-#welcome-video {
+#welcome-video-src {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+#welcome-canvas {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 12;
   width: 480px;
-  height: auto;
+  height: 270px;
   pointer-events: none;
   mix-blend-mode: screen;
   will-change: transform;

@@ -652,7 +652,16 @@ function handleLaptopExit() {
 const roomLangToggleBtn = document.getElementById("room-lang-toggle");
 const hintEl = document.getElementById("hint");
 const closeMusicBtn = document.getElementById("closeMusic");
-const welcomeVideoEl = document.getElementById("welcome-video");
+// The <video> itself stays invisible (see style.css) and only supplies
+// frames; updateWelcomeText() redraws it onto this <canvas> every frame,
+// which is what's actually positioned/blended/shown. mix-blend-mode on a
+// <video> is unreliable across engines (Safari/WebKit in particular doesn't
+// composite it at all), but canvases blend consistently everywhere.
+const welcomeVideoSrc = document.getElementById("welcome-video-src");
+const welcomeCanvas = document.getElementById("welcome-canvas");
+const welcomeCanvasCtx = welcomeCanvas.getContext("2d", { willReadFrequently: true });
+welcomeCanvas.width = 960;
+welcomeCanvas.height = 540;
 
 // Real handwritten black-bg/white-ink clips, composited with mix-blend-mode:
 // screen (see style.css) so the black areas disappear and only the ink
@@ -693,10 +702,10 @@ function pickNextQuote() {
 }
 
 function playWelcomeVideo(src) {
-  welcomeVideoEl.pause();
-  welcomeVideoEl.src = src;
-  welcomeVideoEl.currentTime = 0;
-  welcomeVideoEl.play().catch(() => {});
+  welcomeVideoSrc.pause();
+  welcomeVideoSrc.src = src;
+  welcomeVideoSrc.currentTime = 0;
+  welcomeVideoSrc.play().catch(() => {});
 }
 function showWelcomeText() {
   welcomeShown = true;
@@ -715,19 +724,19 @@ function cycleWelcomeQuote() {
   playWelcomeVideo(currentQuoteSrc);
 }
 
-const welcomeHitCanvas = document.createElement("canvas");
-const welcomeHitCtx = welcomeHitCanvas.getContext("2d", { willReadFrequently: true });
 // Handwritten strokes are thin with lots of gaps (between letters, inside
 // "o"/"e", etc.), so an exact single-pixel hit test is unreasonably hard to
 // land with a real mouse. Check a small neighborhood around the click
 // instead — a "close enough to the ink" tolerance — rather than demanding
-// the literal stroke pixel.
+// the literal stroke pixel. Samples straight from welcomeCanvas, which
+// updateWelcomeText() already redraws with the current video frame every
+// frame, so there's no need for a second offscreen copy here.
 const WELCOME_CLICK_TOLERANCE_PX = 16; // screen-space radius, independent of current scale
 
 function isClickOnWelcomeInk(clientX, clientY) {
-  if (welcomeVideoEl.style.visibility === "hidden") return false;
-  if (!welcomeVideoEl.videoWidth || welcomeVideoEl.readyState < 2) return false;
-  const rect = welcomeVideoEl.getBoundingClientRect();
+  if (welcomeCanvas.style.visibility === "hidden") return false;
+  if (welcomeVideoSrc.readyState < 2) return false;
+  const rect = welcomeCanvas.getBoundingClientRect();
   const tol = WELCOME_CLICK_TOLERANCE_PX;
   if (
     clientX < rect.left - tol || clientX > rect.right + tol ||
@@ -735,15 +744,12 @@ function isClickOnWelcomeInk(clientX, clientY) {
   ) {
     return false;
   }
-  const vw = welcomeVideoEl.videoWidth;
-  const vh = welcomeVideoEl.videoHeight;
-  welcomeHitCanvas.width = vw;
-  welcomeHitCanvas.height = vh;
-  welcomeHitCtx.drawImage(welcomeVideoEl, 0, 0, vw, vh);
+  const vw = welcomeCanvas.width;
+  const vh = welcomeCanvas.height;
 
   const px = ((clientX - rect.left) / rect.width) * vw;
   const py = ((clientY - rect.top) / rect.height) * vh;
-  const radiusPx = Math.max(6, (tol / rect.width) * vw); // screen tolerance -> source-pixel radius
+  const radiusPx = Math.max(6, (tol / rect.width) * vw); // screen tolerance -> canvas-pixel radius
 
   const x0 = Math.max(0, Math.floor(px - radiusPx));
   const x1 = Math.min(vw - 1, Math.ceil(px + radiusPx));
@@ -751,7 +757,7 @@ function isClickOnWelcomeInk(clientX, clientY) {
   const y1 = Math.min(vh - 1, Math.ceil(py + radiusPx));
   if (x1 < x0 || y1 < y0) return false;
 
-  const data = welcomeHitCtx.getImageData(x0, y0, x1 - x0 + 1, y1 - y0 + 1).data;
+  const data = welcomeCanvasCtx.getImageData(x0, y0, x1 - x0 + 1, y1 - y0 + 1).data;
   for (let i = 0; i < data.length; i += 4) {
     if ((data[i] + data[i + 1] + data[i + 2]) / 3 > 40) return true;
   }
@@ -799,28 +805,31 @@ const WELCOME_ANCHOR = new THREE.Vector3(...fromBlender(1.4, 1.0, 1.7));
 const WELCOME_REF_DISTANCE = 4; // camera distance at which the text renders at scale 1
 
 function updateWelcomeText() {
+  // Mirror the current video frame onto the canvas every frame (cheap: a
+  // small offscreen resolution, drawImage is fast). This is what actually
+  // gets the screen blend + gets positioned below, not the <video> itself.
+  if (welcomeVideoSrc.readyState >= 2) {
+    welcomeCanvasCtx.drawImage(welcomeVideoSrc, 0, 0, welcomeCanvas.width, welcomeCanvas.height);
+  }
+
   const pos = WELCOME_ANCHOR.clone();
   pos.y += Math.sin(clock.getElapsedTime() * 0.7) * 0.06;
 
   const screenPos = pos.clone().project(camera);
   if (screenPos.z > 1) {
-    welcomeVideoEl.style.visibility = "hidden";
+    welcomeCanvas.style.visibility = "hidden";
     return;
   }
-  welcomeVideoEl.style.visibility = "visible";
+  welcomeCanvas.style.visibility = "visible";
 
   const rect = renderer.domElement.getBoundingClientRect();
   const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
   const y = (-screenPos.y * 0.5 + 0.5) * rect.height + rect.top;
   const scale = WELCOME_REF_DISTANCE / camera.position.distanceTo(pos);
 
-  welcomeVideoEl.style.left = `${x}px`;
-  welcomeVideoEl.style.top = `${y}px`;
-  // translateZ(0) forces this onto its own GPU compositing layer — without
-  // it, mix-blend-mode on a <video> often fails to blend with the canvas
-  // behind it (the video stays on a hardware-decode path that skips normal
-  // CSS blend compositing).
-  welcomeVideoEl.style.transform = `translate(-50%, -50%) scale(${scale}) translateZ(0)`;
+  welcomeCanvas.style.left = `${x}px`;
+  welcomeCanvas.style.top = `${y}px`;
+  welcomeCanvas.style.transform = `translate(-50%, -50%) scale(${scale})`;
 }
 
 function animate() {
