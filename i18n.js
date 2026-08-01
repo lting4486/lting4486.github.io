@@ -7,7 +7,6 @@ const translations = {
   zh: {
     loadError: "加载失败，检查 assets/study_room.glb 是否存在",
     hint: "试着点点看",
-    welcomeText: "欢迎",
     mapClose: "关闭",
     mapTitle: "去过的地方",
     mapHint: "拖动/滚轮缩放看世界地图 · 点空白处添加标记 · 点已有标记删除它",
@@ -41,7 +40,6 @@ const translations = {
   en: {
     loadError: "Failed to load — check that assets/study_room.glb exists",
     hint: "try to click",
-    welcomeText: "welcome",
     mapClose: "Close",
     mapTitle: "Places I've been",
     mapHint: "Drag/scroll to explore the map · click empty space to add a pin · click an existing pin to remove it",

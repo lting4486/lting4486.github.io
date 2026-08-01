@@ -202,77 +202,18 @@ new RGBELoader().load(
 
 // Recorded from Blender. Colors are 0-1 RGB; "energy" values are the raw
 // Blender watt numbers, rescaled below for Three.js's different light units.
-const LIGHT_PRESETS = {
-  // Reverted to the manual lighting balance that was already approved
-  // against the Blender renders. HDRI stays loaded but at a low, supporting
-  // intensity so it adds a little material richness without changing the mood.
-  day: {
-    // warmed toward a golden-hour peach/orange, to match the lofi-room mood
-    sunColor: [1.0, 0.82, 0.60], sunEnergy: 4.2,
-    windowColor: [1.0, 0.80, 0.55], windowEnergy: 8.0,
-    lampEnergy: 0.0, lampColor: [1.0, 0.75, 0.35],
-    fillColor: [0.95, 0.78, 0.62], fillEnergy: 11.0,
-    ambientColor: [0.80, 0.60, 0.50], ambientStrength: 0.5,
-    envIntensity: 0.3,
-  },
-  dusk: {
-    sunColor: [0.85, 0.55, 0.68], sunEnergy: 1.6,
-    windowColor: [0.85, 0.55, 0.68], windowEnergy: 2.5,
-    lampEnergy: 14.0, lampColor: [1.0, 0.75, 0.35],
-    fillColor: [0.78, 0.60, 0.68], fillEnergy: 14.0,
-    ambientColor: [0.42, 0.32, 0.42], ambientStrength: 0.20,
-    envIntensity: 0.15,
-  },
-  night: {
-    sunColor: [0.22, 0.28, 0.52], sunEnergy: 0.3,
-    windowColor: [0.22, 0.28, 0.52], windowEnergy: 1.5,
-    lampEnergy: 19.0, lampColor: [1.0, 0.75, 0.35],
-    fillColor: [0.30, 0.35, 0.50], fillEnergy: 3.153,
-    ambientColor: [0.05, 0.06, 0.12], ambientStrength: 0.10,
-    envIntensity: 0.05,
-  },
+// Fixed to the "day" look — warmed toward a golden-hour peach/orange to
+// match the lofi-room mood. (Used to cycle through dusk/night presets tied
+// to the real clock, but those read as murky and low-contrast in the
+// real-time renderer, so the room now always stays in day lighting.)
+const DAY_PRESET = {
+  sunColor: [0.961, 0.922, 0.659], sunEnergy: 0,
+  windowColor: [1, 0.8, 0.973], windowEnergy: 11.43,
+  lampEnergy: 13.89, lampColor: [0.898, 0.675, 0.6],
+  fillColor: [0.773, 0.549, 0.549], fillEnergy: 11,
+  ambientColor: [0.969, 0.831, 0.773], ambientStrength: 0.53,
+  envIntensity: 0.53,
 };
-
-// Anchor each preset to a time of day (24h clock) for interpolation.
-const TIME_ANCHORS = [
-  { hour: 6, preset: "night" },
-  { hour: 8, preset: "day" },
-  { hour: 17, preset: "day" },
-  { hour: 19, preset: "dusk" },
-  { hour: 21, preset: "night" },
-];
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-function lerpArr(a, b, t) { return a.map((v, i) => lerp(v, b[i], t)); }
-
-function blendPresets(pA, pB, t) {
-  const out = {};
-  for (const key of Object.keys(pA)) {
-    const a = pA[key], b = pB[key];
-    out[key] = Array.isArray(a) ? lerpArr(a, b, t) : lerp(a, b, t);
-  }
-  return out;
-}
-
-function getCurrentPreset(date = new Date()) {
-  const hourFloat = date.getHours() + date.getMinutes() / 60;
-  const anchors = TIME_ANCHORS;
-  let prev = anchors[anchors.length - 1];
-  let next = anchors[0];
-  for (let i = 0; i < anchors.length; i++) {
-    if (anchors[i].hour > hourFloat) {
-      next = anchors[i];
-      prev = anchors[(i - 1 + anchors.length) % anchors.length];
-      break;
-    }
-  }
-  let span = next.hour - prev.hour;
-  let pos = hourFloat - prev.hour;
-  if (span <= 0) { span += 24; }
-  if (pos < 0) { pos += 24; }
-  const t = span === 0 ? 0 : pos / span;
-  return blendPresets(LIGHT_PRESETS[prev.preset], LIGHT_PRESETS[next.preset], t);
-}
 
 // Rough rescale from Blender Watts to Three.js light intensity units —
 // tuned by eye against the Blender reference renders, not physically exact.
@@ -310,9 +251,7 @@ function syncMaterialEnvIntensity() {
   });
 }
 
-applyLightPreset(getCurrentPreset());
-// Re-check the real clock every few minutes so the room drifts with the day.
-setInterval(() => applyLightPreset(getCurrentPreset()), 5 * 60 * 1000);
+applyLightPreset(DAY_PRESET);
 
 // ---------------------------------------------------------------------------
 // Fake a plush/fuzzy look for the rug (Blender's hair particles don't
@@ -512,14 +451,24 @@ window.addEventListener("pointerdown", (e) => {
 });
 
 window.addEventListener("pointerup", (e) => {
-  if (e.target !== canvas) return; // click landed on a UI overlay, not the 3D scene
-
   const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
   if (dist > 6) {
     // was a drag/orbit, not a click — let go and spring back to center
     if (referenceView.position) flyCameraTo(referenceView, 600);
     return;
   }
+
+  // The welcome clip sits over furniture on the wall and is pointer-events:
+  // none, so a click "on" it actually lands on the canvas underneath —
+  // catch it here with a real pixel check before falling through to the 3D
+  // raycast, so only the visible ink (not its whole black rectangle) is
+  // clickable.
+  if (isClickOnWelcomeInk(e.clientX, e.clientY)) {
+    cycleWelcomeQuote();
+    return;
+  }
+
+  if (e.target !== canvas) return; // click landed on a UI overlay, not the 3D scene
 
   setPointerFromEvent(e);
   raycaster.setFromCamera(pointer, camera);
@@ -703,26 +652,110 @@ function handleLaptopExit() {
 const roomLangToggleBtn = document.getElementById("room-lang-toggle");
 const hintEl = document.getElementById("hint");
 const closeMusicBtn = document.getElementById("closeMusic");
-const welcomeTextEl = document.getElementById("welcome-text");
+const welcomeVideoEl = document.getElementById("welcome-video");
 
-// Renders each character as its own span with a staggered entrance
-// animation, so the text reveals roughly like it's being written rather
-// than fading in as one block.
+// Real handwritten black-bg/white-ink clips, composited with mix-blend-mode:
+// screen (see style.css) so the black areas disappear and only the ink
+// shows. Only the greeting follows the zh/en toggle — every click after
+// that jumps to a random quote clip from one shared pool, independent of
+// the current language.
+const GREETING_VIDEOS = {
+  en: "assets/sentences/welcome.mp4",
+  zh: "assets/sentences/huanying.mp4",
+};
+const QUOTE_VIDEOS = [
+  "assets/sentences/quote-teacher-talent.mp4",
+  "assets/sentences/quote-osmanthus.mp4",
+  "assets/sentences/quote-xia.mp4",
+  "assets/sentences/quote-isee-zh.mp4",
+  "assets/sentences/quote-chenziang.mp4",
+  "assets/sentences/quote-isee-en.mp4",
+  "assets/sentences/quote-landor-zh.mp4",
+  "assets/sentences/quote-wilde-serious.mp4",
+  "assets/sentences/quote-landor-en.mp4",
+  "assets/sentences/quote-kind.mp4",
+  "assets/sentences/quote-qinguan.mp4",
+  "assets/sentences/quote-wilde-stars.mp4",
+  "assets/sentences/quote-woolf.mp4",
+];
+
 let welcomeShown = false;
-function renderWelcomeChars() {
-  const text = t("welcomeText");
-  welcomeTextEl.innerHTML = "";
-  [...text].forEach((ch, i) => {
-    const span = document.createElement("span");
-    span.className = "welcome-char";
-    span.textContent = ch === " " ? " " : ch;
-    span.style.animationDelay = `${i * 0.15}s`;
-    welcomeTextEl.appendChild(span);
-  });
+let showingGreeting = true;
+let currentQuoteSrc = null;
+
+function pickNextQuote() {
+  if (QUOTE_VIDEOS.length === 1) return QUOTE_VIDEOS[0];
+  let next;
+  do {
+    next = QUOTE_VIDEOS[Math.floor(Math.random() * QUOTE_VIDEOS.length)];
+  } while (next === currentQuoteSrc);
+  return next;
+}
+
+function playWelcomeVideo(src) {
+  welcomeVideoEl.pause();
+  welcomeVideoEl.src = src;
+  welcomeVideoEl.currentTime = 0;
+  welcomeVideoEl.play().catch(() => {});
 }
 function showWelcomeText() {
   welcomeShown = true;
-  renderWelcomeChars();
+  showingGreeting = true;
+  playWelcomeVideo(GREETING_VIDEOS[getLang()]);
+}
+// Clicking the clip jumps to a random quote. Only the greeting itself is
+// tied to the language toggle; quotes are drawn from one shared pool
+// regardless of it. The video sits over furniture on the wall (see
+// WELCOME_ANCHOR), so it stays pointer-events:none and gets a real pixel
+// hit-test in the pointerup handler below instead of claiming its whole
+// (mostly invisible, black) rectangle as clickable.
+function cycleWelcomeQuote() {
+  showingGreeting = false;
+  currentQuoteSrc = pickNextQuote();
+  playWelcomeVideo(currentQuoteSrc);
+}
+
+const welcomeHitCanvas = document.createElement("canvas");
+const welcomeHitCtx = welcomeHitCanvas.getContext("2d", { willReadFrequently: true });
+// Handwritten strokes are thin with lots of gaps (between letters, inside
+// "o"/"e", etc.), so an exact single-pixel hit test is unreasonably hard to
+// land with a real mouse. Check a small neighborhood around the click
+// instead — a "close enough to the ink" tolerance — rather than demanding
+// the literal stroke pixel.
+const WELCOME_CLICK_TOLERANCE_PX = 16; // screen-space radius, independent of current scale
+
+function isClickOnWelcomeInk(clientX, clientY) {
+  if (welcomeVideoEl.style.visibility === "hidden") return false;
+  if (!welcomeVideoEl.videoWidth || welcomeVideoEl.readyState < 2) return false;
+  const rect = welcomeVideoEl.getBoundingClientRect();
+  const tol = WELCOME_CLICK_TOLERANCE_PX;
+  if (
+    clientX < rect.left - tol || clientX > rect.right + tol ||
+    clientY < rect.top - tol || clientY > rect.bottom + tol
+  ) {
+    return false;
+  }
+  const vw = welcomeVideoEl.videoWidth;
+  const vh = welcomeVideoEl.videoHeight;
+  welcomeHitCanvas.width = vw;
+  welcomeHitCanvas.height = vh;
+  welcomeHitCtx.drawImage(welcomeVideoEl, 0, 0, vw, vh);
+
+  const px = ((clientX - rect.left) / rect.width) * vw;
+  const py = ((clientY - rect.top) / rect.height) * vh;
+  const radiusPx = Math.max(6, (tol / rect.width) * vw); // screen tolerance -> source-pixel radius
+
+  const x0 = Math.max(0, Math.floor(px - radiusPx));
+  const x1 = Math.min(vw - 1, Math.ceil(px + radiusPx));
+  const y0 = Math.max(0, Math.floor(py - radiusPx));
+  const y1 = Math.min(vh - 1, Math.ceil(py + radiusPx));
+  if (x1 < x0 || y1 < y0) return false;
+
+  const data = welcomeHitCtx.getImageData(x0, y0, x1 - x0 + 1, y1 - y0 + 1).data;
+  for (let i = 0; i < data.length; i += 4) {
+    if ((data[i] + data[i + 1] + data[i + 2]) / 3 > 40) return true;
+  }
+  return false;
 }
 
 function refreshRoomText() {
@@ -730,9 +763,7 @@ function refreshRoomText() {
   roomLangToggleBtn.textContent = t("langToggle");
   hintEl.textContent = t("hint");
   closeMusicBtn.setAttribute("aria-label", t("musicClose"));
-  welcomeTextEl.classList.toggle("lang-zh", getLang() === "zh");
-  welcomeTextEl.classList.toggle("lang-en", getLang() === "en");
-  if (welcomeShown) renderWelcomeChars();
+  if (welcomeShown && showingGreeting) playWelcomeVideo(GREETING_VIDEOS[getLang()]);
 }
 refreshRoomText();
 onLangChange(refreshRoomText);
@@ -761,7 +792,7 @@ function animateGlobe(delta, elapsed) {
   floatingGlobe.position.y = GLOBE_BASE_POS[1] + Math.sin(elapsed * 0.6) * 0.04;
 }
 
-// Floating "welcome" text — anchored to a fixed spot in the room (not the
+// Floating handwriting clip — anchored to a fixed spot in the room (not the
 // screen), so it keeps its place and perspective size as the camera moves,
 // with a gentle continuous bob layered on top of the anchor's world Y.
 const WELCOME_ANCHOR = new THREE.Vector3(...fromBlender(1.4, 1.0, 1.7));
@@ -773,19 +804,23 @@ function updateWelcomeText() {
 
   const screenPos = pos.clone().project(camera);
   if (screenPos.z > 1) {
-    welcomeTextEl.style.visibility = "hidden";
+    welcomeVideoEl.style.visibility = "hidden";
     return;
   }
-  welcomeTextEl.style.visibility = "visible";
+  welcomeVideoEl.style.visibility = "visible";
 
   const rect = renderer.domElement.getBoundingClientRect();
   const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
   const y = (-screenPos.y * 0.5 + 0.5) * rect.height + rect.top;
   const scale = WELCOME_REF_DISTANCE / camera.position.distanceTo(pos);
 
-  welcomeTextEl.style.left = `${x}px`;
-  welcomeTextEl.style.top = `${y}px`;
-  welcomeTextEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  welcomeVideoEl.style.left = `${x}px`;
+  welcomeVideoEl.style.top = `${y}px`;
+  // translateZ(0) forces this onto its own GPU compositing layer — without
+  // it, mix-blend-mode on a <video> often fails to blend with the canvas
+  // behind it (the video stays on a hardware-decode path that skips normal
+  // CSS blend compositing).
+  welcomeVideoEl.style.transform = `translate(-50%, -50%) scale(${scale}) translateZ(0)`;
 }
 
 function animate() {

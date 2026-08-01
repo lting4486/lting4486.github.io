@@ -39,7 +39,7 @@ html, body {
     rgba(120, 55, 60, 0.28) 100%
   );
   mix-blend-mode: soft-light;
-  opacity: 0.85;
+  opacity: 0.7;
 }
 #scene:active {
   cursor: grabbing;
@@ -88,36 +88,23 @@ html, body {
   opacity: 0;
 }
 
-#welcome-text {
+/* Handwritten "welcome"/"欢迎" + quote videos: black background + white ink,
+   composited with the room via screen blend (black -> invisible, white ->
+   shows), so no real alpha channel is needed. Positioned every frame from a
+   fixed 3D anchor (see updateWelcomeText in main.js). pointer-events stays
+   off — the black background sits over clickable furniture, so clicks pass
+   straight through to the 3D scene by default. main.js does a real pixel
+   check on click instead, so only the visible ink itself is clickable. */
+#welcome-video {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 12;
+  width: 480px;
+  height: auto;
   pointer-events: none;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
-  white-space: nowrap;
+  mix-blend-mode: screen;
   will-change: transform;
-}
-#welcome-text.lang-zh {
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 96px;
-}
-#welcome-text.lang-en {
-  font-family: "Caveat", cursive;
-  font-size: 84px;
-}
-.welcome-char {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(10px) rotate(-6deg);
-  animation: welcome-char-in 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
-}
-@keyframes welcome-char-in {
-  to {
-    opacity: 1;
-    transform: translateY(0) rotate(0deg);
-  }
 }
 
 #room-lang-toggle {
